@@ -8,14 +8,15 @@ function love.load()
 
 	world = {
 		rooms = ROOMS,
-		room = ROOMS.hall,
+		-- room = ROOMS.hall,
+		room = ROOMS.stairs_2, -- for debug
 		inventory = {
-			-- KITCHEN_KEY,
+			-- CROWBAR,
 		},
 		time = {
 			h = 21,
-			m = 59,
-			s = 0,
+			m = 58,
+			s = 45,
 		}
 	}
 
@@ -43,7 +44,8 @@ function love.load()
 
 	STATE_PLAYER_INPUT = true
 
-	BACKGROUND_COLOR =	hexToRgb("1d2021")
+	BACKGROUND_COLOR =	hexToRgb("1d2021") -- rgb(29, 32, 33)
+	UI_COLOR =			hexToRgb("d79921")
 	TEXT_COLOR = 		hexToRgb("fbf1c7")
 	PLAYER_COLOR =		hexToRgb("d79921")
 	HELP_COLOR = 		hexToRgb("458588")
@@ -184,11 +186,11 @@ function love.draw()
 	love.graphics.setColor(PLAYER_COLOR)
 	love.graphics.print("> "..PLAYER_INPUT_LINE, LINE_HEIGTH, WH - LINE_HEIGTH*4)
 
-	love.graphics.setColor(PLAYER_COLOR)
+	love.graphics.setColor(UI_COLOR)
 	love.graphics.rectangle("fill", LINE_HEIGTH*0.5, WH - LINE_HEIGTH*2, WW - LINE_HEIGTH, LINE_HEIGTH*1.5, LINE_HEIGTH*0.25)
 
 	love.graphics.setColor(BACKGROUND_COLOR)
-	love.graphics.print(world.room.name.." |", LINE_HEIGTH, WW - TEXT_FONT:getHeight(world.room.name.." |")*1.6)
+	love.graphics.print(world.room.name, LINE_HEIGTH, WW - TEXT_FONT:getHeight(world.room.name)*1.6)
 
 	local shortDirectionsText = getShortDirections(world)
 	-- love.graphics.print(shortDirectionsText, WW - TEXT_FONT:getWidth(shortDirectionsText) - LINE_HEIGTH, WW - TEXT_FONT:getHeight(shortDirectionsText)*1.6)
@@ -215,4 +217,7 @@ function love.draw()
 		-- love.graphics.setColor(1, 0, 0, 1/steps*10)
 		love.graphics.rectangle("fill", 0, 0, WW, 25 + i*5)
 	end
+
+	love.graphics.setColor(UI_COLOR)
+	love.graphics.rectangle("line", 0 + LINE_HEIGTH/4, 0 + LINE_HEIGTH/4, WW - LINE_HEIGTH/2, WH - LINE_HEIGTH/2, LINE_HEIGTH*0.25)
 end

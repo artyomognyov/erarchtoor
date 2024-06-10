@@ -1,55 +1,10 @@
 local utf8 = require("utf8")
 
 require "rooms"
+require "defaults"
 
 CYRYLLIC = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
 CYRYLLIC_LOWER = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
-
-GAME_TITLE_TEXT = "- ЕРАРХТУР -"
-
-INTRO_TEXT = {
-	"В этом мире есть вещи",
-	"о которых лучше не знать.",
-	"А если всё таки знаешь",
-	"- то лучше забыть.",
-	"",
-	"",
-	"",
-	"Тебе удалось всё-таки пробраться в",
-	"ДК Ерархтура ночью чтобы изучить тайны",
-	"которые скрывает его подвал.",
-	"А может быть и Мамэ...",
-	"Главное успеть до полуночи.",
-}
-
-HELP_TEXT = {
-	"Как играть в эту игру.",
-	"",
-	"Ты можешь взаимодействовать с миром",
-	"с помощью ввода с клавиатуры.",
-	"Просто напиши что хочешь сделать",
-	"",
-	"Список базовых команд:",
-	"осмотреться (о), инвернтарь (и),",
-	"север (с), юг (ю), запад (з), восток (в),",
-	"вверх (вв), вниз (вн),",
-	"осмотреть/изучить (о/и) [предмет], взять [предмет],",
-	"открыть [предмет/дверь]",
-	"",
-	"Остальное поймёшь по ходу игры...",
-}
-
-EXPLORE_YOURSELF_TEXT = {
-	"Обыкновенный звёздник. Или звёздница.",
-	"В темноте не разглядеть...",
-	"Нет даже уверенности какого ты года.",
-}
-
-CANNOT_EXPLORE = "Ты не видишь здесь такого предмета."
-CANNOT_TAKE = "Ты не можешь взять это с собой."
-CANNOT_LISTEN = "Ты не слышишь ничего особенного."
-CANNOT_OPEN = "Ты не можешь открыть это."
-NOTHING_TO_OPEN = "Ты не можешь здесь ничего открыть."
 
 needHint = 1
 
@@ -133,7 +88,7 @@ function goTo(world, direction)
 end
 
 function getShortDirections(world)
-	local text = ""
+	local text = " "
 	if world.room.directions["n"][1] == true then text = text.."С " end
 	if world.room.directions["s"][1] == true then text = text.."Ю " end
 	if world.room.directions["w"][1] == true then text = text.."З " end
@@ -167,7 +122,12 @@ function explore(world, object)
 	end
 
 	for _, v in ipairs(world.room.doors) do
-		if object == "дверь" or object == "сундук" then
+		if object == "дверь"
+			or object == "сундук"
+			or object == "люк"
+			or object == "крышка"
+			or object == "крышку"
+			or object == "проход"  then
 			if v.opened == true then
 				for _, d in ipairs(v.openedDescription) do
 					table.insert(text, d)
@@ -238,6 +198,14 @@ function take(world, object)
 		end
 	end
 
+	for i, v in ipairs(world.inventory) do
+		for _, o in ipairs(v.pronounce) do
+			if object == o then
+				table.insert(text, ALREADY_TAKEN)
+			end
+		end
+	end
+
 	for i, v in ipairs(world.room.static) do
 		for _, o in ipairs(v.pronounce) do
 			if object == o then
@@ -258,20 +226,22 @@ function open(world, object)
 
 	if object == "дверь" then
 		for i, v in ipairs(world.room.doors) do
-			if v.opened == false then
-				for j, h in ipairs(world.inventory) do
-					for _, a in ipairs(h.actions) do
-						if a == "open" and h.door == v.id then
-							world.room.doors[j].opened = true
-							world.room.directions[v.direction] = v.newDirection
-							for _, t in ipairs(v.openedDescription) do
-								table.insert(text, t)
+			if v.class == "open_with_key" then
+				if v.opened == false then
+					for j, h in ipairs(world.inventory) do
+						for _, a in ipairs(h.actions) do
+							if a == "open" and h.door == v.id then
+								world.room.doors[i].opened = true
+								world.room.directions[v.direction] = v.newDirection
+								for _, t in ipairs(v.openingDescription) do
+									table.insert(text, t)
+								end
 							end
 						end
 					end
+				else
+					table.insert(text, "Она же уже открыта.")
 				end
-			else
-				table.insert(text, "Она же уже открыта.")
 			end
 		end
 	end
@@ -285,7 +255,45 @@ function open(world, object)
 	end
 
 	if #text == 0 then
-		text = {NOTHING_TO_OPEN}
+		text = {NOTHING_TO_ACT}
+	end
+
+	return text
+end
+
+function destroy(world, object)
+	local text = {}
+
+	if object == "люк" or object == "крышка" or object == "крышку" or object == "проход" then
+		for i, v in ipairs(world.room.doors) do
+			if v.class == "break" and v.opened == false then
+				for j, h in ipairs(world.inventory) do
+					for _, a in ipairs(h.actions) do
+						if a == "break" and h.door == v.id then
+							world.room.doors[i].opened = true
+							world.room.directions[v.direction] = v.newDirection
+							for _, t in ipairs(v.openingDescription) do
+								table.insert(text, t)
+							end
+						end
+					end
+				end
+			else
+				table.insert(text, "Это уже сломано.")
+			end
+		end
+	end
+
+	for i, v in ipairs(world.room.static) do
+		for _, o in ipairs(v.pronounce) do
+			if object == o then
+				table.insert(text, CANNOT_BREAK)
+			end
+		end
+	end
+
+	if #text == 0 then
+		text = {NOTHING_TO_ACT}
 	end
 
 	return text
@@ -428,7 +436,7 @@ function parcer(world, inputtext)
 				return explore(world, words[i+1])
 			end
 
-		elseif w == "инвентарь" or w == "инвентаре" or (w == "и" and #words == 1) then
+		elseif w == "инвентарь" or w == "инвентаре" or w == "рюкзак" or w == "рюкзаке" or (w == "и" and #words == 1) then
 			return showInventory(world)
 
 		elseif (w == "взять" or w == "забрать" or w == "поднять" or w == "украсть") and i < #words then
@@ -436,6 +444,9 @@ function parcer(world, inputtext)
 
 		elseif (w == "открыть" or w == "отпереть") and i < #words then
 			return open(world, words[i+1])
+
+		elseif (w == "сломать" or w == "ломать") and i < #words then
+			return destroy(world, words[i+1])
 
 		-- elseif w == "привет" then
 		-- 	return {'И тебе привет!'}
